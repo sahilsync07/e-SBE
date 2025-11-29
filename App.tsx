@@ -307,9 +307,8 @@ const ProductDetailPage = () => {
   };
 
   const goBack = () => {
-    // If we have history state (standard nav), go back. 
-    // If we landed here directly/refresh (key is default), go home.
-    if (window.history.length > 1) {
+    // Check if we are in a fresh session (direct land/refresh) or have history
+    if (location.key !== 'default') {
       navigate(-1);
     } else {
       navigate('/', { replace: true });
@@ -317,18 +316,18 @@ const ProductDetailPage = () => {
   };
 
   return (
-    <div 
-      className="flex flex-col h-screen bg-white"
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-    >
+    <div className="flex flex-col h-screen bg-white">
       {/* Fullscreen Viewer */}
       {isFullScreen && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center">
+        <div 
+           className="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center"
+           onTouchStart={onTouchStart}
+           onTouchMove={onTouchMove}
+           onTouchEnd={onTouchEnd}
+        >
           <button 
             onClick={(e) => { e.stopPropagation(); setIsFullScreen(false); }}
-            className="absolute top-4 right-4 text-white p-2 bg-black/50 rounded-full z-50"
+            className="absolute top-4 right-4 text-white p-2 bg-black/50 rounded-full z-50 cursor-pointer"
           >
             <X size={32} />
           </button>
@@ -347,8 +346,11 @@ const ProductDetailPage = () => {
       {/* App Bar */}
       <div className="bg-white p-4 shadow-sm flex items-center sticky top-0 z-10 border-b">
         <button 
-          onClick={(e) => { e.stopPropagation(); goBack(); }} 
-          className="p-2 mr-2 -ml-2 rounded-full hover:bg-gray-100 z-20"
+          onClick={(e) => { 
+            e.stopPropagation(); 
+            goBack(); 
+          }} 
+          className="p-2 mr-2 -ml-2 rounded-full hover:bg-gray-100 z-20 cursor-pointer active:bg-gray-200"
         >
           <ArrowLeft size={24} className="text-gray-700" />
         </button>
@@ -358,7 +360,13 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      {/* Main Content - Swipe Handlers applied HERE */}
+      <div 
+        className="flex-1 overflow-y-auto p-4"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         {/* Main Image */}
         <div className="relative mb-6">
           <img 
