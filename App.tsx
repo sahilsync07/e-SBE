@@ -4,7 +4,7 @@ import { HashRouter, Routes, Route, useNavigate, useParams, Link, useLocation } 
 import { 
   Search, RefreshCw, ShoppingCart, Settings, ArrowLeft, 
   Trash2, Share2, X, Maximize2, MapPin, User,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Package
 } from 'lucide-react';
 import { Product, CartItem } from './types';
 import { 
@@ -33,6 +33,29 @@ const LoadingSpinner = () => (
   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
 );
 
+// Modern Image Component with Fallback Icon
+const ProductImage = ({ src, alt, className, iconSize = 24 }: { src: string, alt: string, className?: string, iconSize?: number }) => {
+  const [error, setError] = useState(false);
+
+  if (error || !src) {
+    return (
+      <div className={`flex items-center justify-center bg-gray-100 text-gray-300 ${className}`}>
+        <Package size={iconSize} strokeWidth={1.5} />
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={alt} 
+      className={className}
+      onError={() => setError(true)}
+      loading="lazy"
+    />
+  );
+};
+
 // --- Checkout Modal ---
 const CheckoutModal = ({ 
   isOpen, 
@@ -60,42 +83,44 @@ const CheckoutModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-sm p-6 shadow-2xl">
-        <h2 className="text-xl font-bold mb-4">Confirm Order Details</h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl scale-100 transform transition-all">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">Checkout</h2>
         
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-          <div className="relative">
-            <User size={18} className="absolute left-3 top-3 text-gray-400" />
-            <input 
-              type="text" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full pl-10 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Enter name"
-            />
+        <div className="space-y-4 mb-8">
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2 ml-1">Customer Name</label>
+            <div className="relative group">
+              <User size={20} className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-violet-600 transition-colors" />
+              <input 
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all font-medium"
+                placeholder="Ex: John Doe"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location / Place</label>
-          <div className="relative">
-            <MapPin size={18} className="absolute left-3 top-3 text-gray-400" />
-            <input 
-              type="text" 
-              value={place}
-              onChange={(e) => setPlace(e.target.value)}
-              className="w-full pl-10 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Enter location"
-            />
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2 ml-1">Location / Place</label>
+            <div className="relative group">
+              <MapPin size={20} className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-violet-600 transition-colors" />
+              <input 
+                type="text" 
+                value={place}
+                onChange={(e) => setPlace(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all font-medium"
+                placeholder="Ex: New York"
+              />
+            </div>
           </div>
         </div>
 
         <div className="flex gap-3">
           <button 
             onClick={onClose}
-            className="flex-1 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg"
+            className="flex-1 py-3.5 text-gray-600 font-semibold hover:bg-gray-100 rounded-xl transition-colors"
             disabled={isGenerating}
           >
             Cancel
@@ -103,9 +128,9 @@ const CheckoutModal = ({
           <button 
             onClick={handleConfirm}
             disabled={isGenerating}
-            className="flex-1 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex justify-center items-center"
+            className="flex-1 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:opacity-90 active:scale-95 transition-all flex justify-center items-center"
           >
-            {isGenerating ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : 'Share PDF'}
+            {isGenerating ? <LoadingSpinner /> : 'Share PDF'}
           </button>
         </div>
       </div>
@@ -130,68 +155,81 @@ const HomePage = () => {
   }, [products, search]);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="flex flex-col h-screen bg-gray-50/50">
       {/* Header */}
-      <header className="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-20">
-        <div className="flex justify-between items-center mb-3">
-          <h1 className="text-xl font-bold tracking-tight">StockSync</h1>
-          <div className="flex gap-3">
-            <button onClick={syncData} disabled={isSyncing} className="p-2 bg-blue-700 rounded-full hover:bg-blue-800">
-              {isSyncing ? <LoadingSpinner /> : <RefreshCw size={18} />}
+      <header className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-4 pb-6 shadow-lg sticky top-0 z-20 rounded-b-[2rem]">
+        <div className="flex justify-between items-center mb-4 px-1">
+          <h1 className="text-2xl font-bold tracking-tight">StockSync</h1>
+          <div className="flex gap-2">
+            <button 
+              onClick={syncData} 
+              disabled={isSyncing} 
+              className="p-2.5 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition active:scale-95"
+            >
+              {isSyncing ? <LoadingSpinner /> : <RefreshCw size={20} />}
             </button>
-            <Link to="/settings" className="p-2 bg-blue-700 rounded-full hover:bg-blue-800">
-              <Settings size={18} />
+            <Link 
+              to="/settings" 
+              className="p-2.5 bg-white/20 backdrop-blur-md rounded-full hover:bg-white/30 transition active:scale-95"
+            >
+              <Settings size={20} />
             </Link>
           </div>
         </div>
         
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+        <div className="relative mb-1">
+          <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
           <input 
             type="text" 
-            placeholder="Search products..." 
-            className="w-full pl-10 pr-4 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            placeholder="Search inventory..." 
+            className="w-full pl-12 pr-4 py-3 rounded-2xl text-gray-900 bg-white/95 backdrop-blur shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-300 placeholder-gray-400 font-medium"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="text-xs text-blue-100 mt-2 text-right">
+        <div className="text-xs text-violet-200 mt-2 text-right pr-2 font-medium opacity-80">
             Last Synced: {lastSync || 'Never'}
         </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto p-2 pb-24">
+      <main className="flex-1 overflow-y-auto p-3 pb-24 space-y-6">
         {Object.keys(groupedProducts).length === 0 && !isSyncing && (
-           <div className="text-center mt-10 text-gray-500">
-             <p className="mb-4">No products found.</p>
-             <button onClick={syncData} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Sync Now</button>
+           <div className="flex flex-col items-center justify-center mt-20 text-gray-400">
+             <Package size={64} strokeWidth={1} className="mb-4 text-gray-300" />
+             <p className="mb-4 font-medium">No products found.</p>
+             <button onClick={syncData} className="px-6 py-2.5 bg-violet-600 text-white font-semibold rounded-xl shadow-lg active:scale-95 transition">Sync Now</button>
            </div>
         )}
 
         {Object.entries(groupedProducts).map(([groupName, items]) => (
-          <div key={groupName} className="mb-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-2 px-1">{groupName}</h2>
+          <div key={groupName}>
+            <div className="flex items-center gap-2 mb-3 px-2">
+              <div className="h-4 w-1 bg-violet-500 rounded-full"></div>
+              <h2 className="text-lg font-bold text-gray-800 tracking-tight">{groupName}</h2>
+            </div>
+            
             <div className="grid grid-cols-2 gap-3">
               {(items as Product[]).map(product => (
                  <div 
                     key={product.id} 
                     onClick={() => navigate(`/product/${product.id}`)}
-                    className="bg-white rounded-lg shadow-sm overflow-hidden flex flex-col active:scale-95 transition-transform duration-100"
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col active:scale-[0.98] transition-all duration-200"
                  >
-                   <div className="aspect-square w-full bg-gray-200 relative">
-                     <img 
+                   <div className="aspect-[4/3] w-full relative bg-gray-50">
+                     <ProductImage 
                        src={product.imageUrl} 
                        alt={product.productName} 
                        className="w-full h-full object-cover"
-                       onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/300?text=No+Image')}
-                       loading="lazy"
+                       iconSize={32}
                      />
                    </div>
                    <div className="p-3 flex flex-col flex-1">
-                     <h3 className="text-sm font-medium text-gray-900 line-clamp-2 leading-tight mb-1">{product.productName}</h3>
+                     <h3 className="text-[15px] font-semibold text-gray-800 line-clamp-2 leading-snug mb-2">{product.productName}</h3>
                      <div className="mt-auto">
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Stock: {product.quantity}</span>
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${product.quantity > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {product.quantity > 0 ? `${product.quantity} in stock` : 'Out of stock'}
+                        </span>
                      </div>
                    </div>
                  </div>
@@ -203,10 +241,13 @@ const HomePage = () => {
 
       {/* FAB Cart */}
       {cart.length > 0 && (
-        <div className="fixed bottom-6 right-6 z-30">
-          <Link to="/cart" className="flex items-center justify-center w-14 h-14 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition">
-            <ShoppingCart size={24} />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">
+        <div className="fixed bottom-6 right-6 z-30 animate-bounce-in">
+          <Link 
+            to="/cart" 
+            className="flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-violet-600 to-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:-translate-y-1 transition-all active:scale-90"
+          >
+            <ShoppingCart size={28} />
+            <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
               {cart.length}
             </span>
           </Link>
@@ -274,8 +315,12 @@ const ProductDetailPage = () => {
 
   if (!product) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Link to="/" className="text-blue-500 font-medium">Return Home</Link>
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+           <Package size={48} className="mx-auto text-gray-300 mb-2"/>
+           <p className="text-gray-500 mb-4">Product not found</p>
+           <Link to="/" className="text-violet-600 font-bold hover:underline">Return Home</Link>
+        </div>
       </div>
     );
   }
@@ -331,135 +376,129 @@ const ProductDetailPage = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white relative">
+    <div className="flex flex-col h-screen bg-gray-50 relative">
       {/* Navigation Arrows */}
       {currentIndex > 0 && (
         <button 
           onClick={navigateToPrev}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/70 backdrop-blur-sm shadow-md rounded-r-lg text-gray-800 hover:bg-white transition-all active:bg-gray-200"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/80 backdrop-blur-md shadow-lg rounded-r-2xl text-gray-700 hover:text-violet-600 hover:pl-4 transition-all active:scale-95 border border-l-0 border-gray-100"
           aria-label="Previous Product"
         >
-          <ChevronLeft size={28} />
+          <ChevronLeft size={24} />
         </button>
       )}
 
       {currentIndex < products.length - 1 && (
         <button 
           onClick={navigateToNext}
-          className="fixed right-0 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/70 backdrop-blur-sm shadow-md rounded-l-lg text-gray-800 hover:bg-white transition-all active:bg-gray-200"
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-20 p-3 bg-white/80 backdrop-blur-md shadow-lg rounded-l-2xl text-gray-700 hover:text-violet-600 hover:pr-4 transition-all active:scale-95 border border-r-0 border-gray-100"
           aria-label="Next Product"
         >
-          <ChevronRight size={28} />
+          <ChevronRight size={24} />
         </button>
       )}
 
       {/* Fullscreen Viewer */}
       {isFullScreen && (
         <div 
-           className="fixed inset-0 z-50 bg-black flex flex-col justify-center items-center"
+           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center animate-in fade-in duration-300"
            onTouchStart={onTouchStart}
            onTouchMove={onTouchMove}
            onTouchEnd={onTouchEnd}
         >
           <button 
             onClick={(e) => { e.stopPropagation(); setIsFullScreen(false); }}
-            className="absolute top-4 right-4 text-white p-2 bg-black/50 rounded-full z-50 cursor-pointer"
+            className="absolute top-6 right-6 text-white/80 hover:text-white p-2 bg-white/10 rounded-full z-50 cursor-pointer backdrop-blur"
           >
-            <X size={32} />
+            <X size={28} />
           </button>
           
-          {/* Fullscreen Arrows */}
-          {currentIndex > 0 && (
-            <button 
-              onClick={navigateToPrev}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/30 text-white rounded-r-lg"
-            >
-              <ChevronLeft size={40} />
-            </button>
-          )}
-          {currentIndex < products.length - 1 && (
-             <button 
-              onClick={navigateToNext}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/30 text-white rounded-l-lg"
-            >
-              <ChevronRight size={40} />
-            </button>
-          )}
-
-          <img 
+          <ProductImage 
             src={product.imageUrl} 
-            className="max-w-full max-h-full object-contain"
             alt="Fullscreen"
-            onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/800?text=No+Image')}
+            className="max-w-full max-h-full object-contain p-2"
+            iconSize={64}
           />
-          <div className="absolute bottom-10 text-white text-sm">
-            Swipe left/right to browse
+          
+          <div className="absolute bottom-10 text-white/50 text-sm font-medium tracking-wide">
+            Swipe to browse
           </div>
         </div>
       )}
 
       {/* App Bar */}
-      <div className="bg-white p-4 shadow-sm flex items-center sticky top-0 z-10 border-b">
+      <div className="bg-white/80 backdrop-blur-md p-4 shadow-sm flex items-center sticky top-0 z-10 border-b border-gray-100">
         <button 
           onClick={(e) => { 
             e.stopPropagation(); 
             goBack(); 
           }} 
-          className="p-2 mr-2 -ml-2 rounded-full hover:bg-gray-100 z-20 cursor-pointer active:bg-gray-200"
+          className="p-2.5 mr-3 -ml-2 rounded-full hover:bg-gray-100 z-20 cursor-pointer active:scale-90 transition"
         >
-          <ArrowLeft size={24} className="text-gray-700" />
+          <ArrowLeft size={22} className="text-gray-700" />
         </button>
         <div className="flex-1 overflow-hidden">
-          <h2 className="text-lg font-bold text-gray-800 truncate">{product.productName}</h2>
-          <p className="text-xs text-gray-500">{product.groupName}</p>
+          <h2 className="text-lg font-bold text-gray-800 truncate leading-tight">{product.productName}</h2>
+          <p className="text-xs font-medium text-violet-600">{product.groupName}</p>
         </div>
       </div>
 
       {/* Main Content - Swipe Handlers applied HERE */}
       <div 
-        className="flex-1 overflow-y-auto p-4"
+        className="flex-1 overflow-y-auto p-5"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {/* Main Image */}
-        <div className="relative mb-6">
-          <img 
-            onClick={() => setIsFullScreen(true)}
-            src={product.imageUrl} 
-            alt={product.productName} 
-            className="w-full h-72 object-contain bg-gray-50 rounded-lg"
-            onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/400?text=No+Image')}
-          />
-          <button 
-            onClick={() => setIsFullScreen(true)}
-            className="absolute bottom-2 right-2 bg-black/50 text-white p-1.5 rounded-lg"
-          >
-            <Maximize2 size={16} />
-          </button>
+        <div className="relative mb-8 group">
+          <div className="aspect-square bg-white rounded-3xl shadow-sm border border-gray-100 p-6 flex items-center justify-center relative overflow-hidden">
+             {/* Dot Pattern Background */}
+             <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#4f46e5_1px,transparent_1px)] [background-size:16px_16px]"></div>
+             
+             <ProductImage 
+                src={product.imageUrl} 
+                alt={product.productName} 
+                className="w-full h-full object-contain z-10 drop-shadow-xl transition-transform duration-300 group-hover:scale-105"
+                iconSize={80}
+             />
+             
+             {/* Maximize Button */}
+             <button 
+                onClick={() => setIsFullScreen(true)}
+                className="absolute bottom-4 right-4 bg-white/90 backdrop-blur text-gray-700 p-2.5 rounded-xl shadow-md border border-gray-100 active:scale-90 transition z-20"
+              >
+                <Maximize2 size={20} />
+              </button>
+          </div>
         </div>
 
         {/* Info */}
-        <div className="flex justify-between items-center mb-6 bg-gray-50 p-4 rounded-lg">
+        <div className="flex justify-between items-center mb-8">
            <div>
-             <span className="text-sm text-gray-500">Available Stock</span>
-             <p className="text-2xl font-bold text-gray-800">{product.quantity}</p>
+             <span className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Available Stock</span>
+             <p className="text-3xl font-black text-gray-800 tracking-tight mt-0.5">{product.quantity}</p>
            </div>
-           {/* Rate is hidden per requirements */}
+           {cartItem && (
+             <div className="px-4 py-2 bg-green-50 border border-green-100 rounded-xl text-green-700 text-sm font-bold flex items-center shadow-sm animate-pulse-once">
+                <ShoppingCart size={16} className="mr-2" />
+                <span>In Cart</span>
+             </div>
+           )}
         </div>
 
         {/* Exclusive Selection Controls */}
-        <div className="mb-6">
-           <label className="text-sm font-semibold text-gray-700 mb-3 block">Select Quantity / Mode</label>
-           <div className="grid grid-cols-4 gap-2 mb-4">
+        <div className="mb-8">
+           <label className="text-sm font-bold text-gray-800 mb-4 block">Select Quantity</label>
+           <div className="grid grid-cols-4 gap-3 mb-5">
               {['1', '2', '3'].map(opt => (
                 <button
                   key={opt}
                   onClick={() => { setSelectedOption(opt as any); setNoteText(''); }}
-                  className={`py-3 rounded-lg font-bold border ${
+                  className={`py-3.5 rounded-xl font-bold transition-all duration-200 shadow-sm active:scale-95 ${
                     selectedOption === opt 
-                    ? 'bg-blue-600 text-white border-blue-600' 
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    ? 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-indigo-200 shadow-lg ring-2 ring-violet-200' 
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-violet-300 hover:bg-gray-50'
                   }`}
                 >
                   {opt} Set
@@ -467,10 +506,10 @@ const ProductDetailPage = () => {
               ))}
               <button
                  onClick={() => setSelectedOption('note')}
-                 className={`py-3 rounded-lg font-bold border ${
+                 className={`py-3.5 rounded-xl font-bold transition-all duration-200 shadow-sm active:scale-95 ${
                    selectedOption === 'note'
-                   ? 'bg-blue-600 text-white border-blue-600' 
-                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                    ? 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-indigo-200 shadow-lg ring-2 ring-violet-200' 
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-violet-300 hover:bg-gray-50'
                  }`}
                >
                  Note
@@ -478,12 +517,13 @@ const ProductDetailPage = () => {
            </div>
 
            {selectedOption === 'note' && (
-             <div className="animate-fade-in">
+             <div className="animate-in slide-in-from-top-2 duration-200">
+               <label className="text-xs font-semibold text-gray-500 mb-2 block uppercase tracking-wide">Custom Note</label>
                <textarea
                  value={noteText}
                  onChange={(e) => setNoteText(e.target.value)}
-                 placeholder="Enter quantity description (e.g. 6x9 Black 1set)"
-                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none min-h-[80px]"
+                 placeholder="e.g. 6x9 Black 1set..."
+                 className="w-full p-4 border border-gray-300 bg-white rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none shadow-sm text-gray-800 font-medium min-h-[100px] resize-none"
                />
              </div>
            )}
@@ -491,31 +531,36 @@ const ProductDetailPage = () => {
         
         {/* Live Feedback */}
         {cartItem && (
-          <div className="mb-6 bg-green-50 border border-green-200 p-3 rounded-lg flex items-center text-green-800 text-sm">
-            <ShoppingCart size={16} className="mr-2" />
-            <span className="font-medium">
-              Added to Cart: {cartItem.sets > 0 ? `${cartItem.sets} Set(s)` : `Note: ${cartItem.note}`}
-            </span>
+          <div className="mb-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 p-4 rounded-2xl flex items-center text-green-800 text-sm shadow-sm">
+            <div className="bg-green-100 p-2 rounded-full mr-3">
+              <ShoppingCart size={18} className="text-green-600" />
+            </div>
+            <div>
+               <p className="text-xs text-green-600 font-semibold uppercase">Currently in cart</p>
+               <p className="font-bold text-base">
+                 {cartItem.sets > 0 ? `${cartItem.sets} Set(s)` : `${cartItem.note}`}
+               </p>
+            </div>
           </div>
         )}
 
-        <div className="h-20"></div> 
+        <div className="h-24"></div> 
       </div>
 
       {/* Bottom Bar */}
-      <div className="p-4 bg-white border-t border-gray-200 sticky bottom-0 flex gap-3 z-10">
+      <div className="p-4 bg-white/90 backdrop-blur-lg border-t border-gray-200 sticky bottom-0 flex gap-3 z-30 pb-6">
         <button 
           onClick={handleCommit}
-          className="flex-1 bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition shadow-lg active:scale-95 transform"
+          className="flex-1 bg-gray-900 text-white font-bold py-4 rounded-2xl hover:bg-black transition shadow-xl active:scale-95 transform flex items-center justify-center gap-2"
         >
           {cartItem ? 'Update Cart' : 'Add to Cart'}
         </button>
         {cart.length > 0 && (
           <button 
             onClick={() => navigate('/cart')}
-            className="flex-none px-5 bg-gray-100 text-gray-800 font-bold py-3.5 rounded-xl hover:bg-gray-200 transition border border-gray-200"
+            className="flex-none px-6 bg-violet-100 text-violet-700 font-bold py-4 rounded-2xl hover:bg-violet-200 transition border border-violet-200 active:scale-95"
           >
-             <ShoppingCart size={22} />
+             <ShoppingCart size={24} />
           </button>
         )}
       </div>
@@ -545,45 +590,55 @@ const CartPage = () => {
          onConfirm={handleConfirmShare} 
        />
 
-       <div className="bg-white p-4 shadow-sm flex items-center sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100">
-          <ArrowLeft size={24} className="text-gray-700" />
+       <div className="bg-white p-4 shadow-sm flex items-center sticky top-0 z-10 border-b border-gray-100">
+        <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 active:scale-95 transition">
+          <ArrowLeft size={24} className="text-gray-800" />
         </button>
-        <h1 className="text-xl font-bold flex-1">Cart ({cart.length})</h1>
+        <h1 className="text-xl font-bold flex-1 text-gray-900">My Cart <span className="text-gray-400 font-normal ml-1">({cart.length})</span></h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-32">
+      <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-4">
         {cart.length === 0 ? (
-          <div className="text-center mt-20 text-gray-500">
-            <ShoppingCart size={48} className="mx-auto mb-4 opacity-50"/>
-            <p>Your cart is empty.</p>
+          <div className="flex flex-col items-center justify-center mt-32 text-gray-400">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+               <ShoppingCart size={40} className="text-gray-300"/>
+            </div>
+            <h3 className="text-lg font-bold text-gray-600 mb-1">Your cart is empty</h3>
+            <p className="text-sm">Looks like you haven't added anything yet.</p>
+            <button onClick={() => navigate('/')} className="mt-6 px-8 py-3 bg-violet-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl active:scale-95 transition">
+              Start Shopping
+            </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {cart.map(item => (
-              <div key={item.productId} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex gap-3 items-start">
-                <img 
+              <div key={item.productId} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 items-start relative group">
+                <ProductImage 
                    src={item.imageUrl} 
-                   className="w-20 h-20 object-cover rounded-lg bg-gray-100 flex-shrink-0"
-                   onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/150')}
+                   alt={item.productName} 
+                   className="w-20 h-20 object-cover rounded-xl bg-gray-50 flex-shrink-0"
+                   iconSize={20}
                 />
                 
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start">
-                     <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 leading-snug">{item.productName}</h3>
-                     <button onClick={() => removeFromCart(item.productId)} className="text-red-500 p-1 -mt-1 -mr-1">
+                <div className="flex-1 min-w-0 py-0.5">
+                  <div className="flex justify-between items-start mb-2">
+                     <h3 className="font-bold text-gray-800 text-sm line-clamp-2 leading-snug pr-6">{item.productName}</h3>
+                     <button 
+                       onClick={() => removeFromCart(item.productId)} 
+                       className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition p-1"
+                     >
                        <Trash2 size={18} />
                      </button>
                   </div>
                   
-                  <div className="mt-2">
+                  <div>
                     {item.sets > 0 ? (
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">
+                      <span className="inline-flex items-center bg-violet-50 text-violet-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-violet-100">
                         {item.sets} Set{item.sets > 1 ? 's' : ''}
                       </span>
                     ) : (
-                      <div className="text-sm text-gray-700 italic bg-gray-50 p-2 rounded border border-gray-100 mt-1">
-                        Note: {item.note}
+                      <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100 italic border-l-4 border-l-violet-300">
+                        "{item.note}"
                       </div>
                     )}
                   </div>
@@ -595,10 +650,10 @@ const CartPage = () => {
       </div>
 
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-gray-200 p-4 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-20">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="w-full bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition flex items-center justify-center gap-2 shadow-lg"
+            className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-4 rounded-2xl hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95"
           >
             <Share2 size={20} />
             Place Order & Share
@@ -616,32 +671,45 @@ const SettingsPage = () => {
 
   return (
     <div className="h-screen bg-gray-50">
-      <div className="bg-white p-4 shadow-sm flex items-center">
-        <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100">
-          <ArrowLeft size={24} className="text-gray-700" />
+      <div className="bg-white p-4 shadow-sm flex items-center border-b border-gray-100">
+        <button onClick={() => navigate(-1)} className="p-2 mr-2 rounded-full hover:bg-gray-100 active:scale-95 transition">
+          <ArrowLeft size={24} className="text-gray-800" />
         </button>
-        <h1 className="text-xl font-bold">Settings</h1>
+        <h1 className="text-xl font-bold text-gray-900">Settings</h1>
       </div>
 
-      <div className="p-4 space-y-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-2">Sync Status</h2>
-          <p className="text-sm text-gray-600">Last Synced: {lastSync || 'Never'}</p>
+      <div className="p-5 space-y-6">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="font-bold text-gray-800 mb-2 flex items-center gap-2">
+            <RefreshCw size={18} className="text-violet-500" />
+            Sync Status
+          </h2>
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+             <p className="text-sm text-gray-500 font-medium">Last Synced</p>
+             <p className="text-lg font-bold text-gray-800">{lastSync || 'Never'}</p>
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <h2 className="font-semibold text-gray-800 mb-4">Data Management</h2>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Settings size={18} className="text-gray-500" />
+            Data Management
+          </h2>
           <button 
             onClick={() => {
-              if (window.confirm("Clear all data?")) {
+              if (window.confirm("Are you sure? This will delete all local data.")) {
                 clearData();
                 navigate('/');
               }
             }}
-            className="w-full py-3 border border-red-500 text-red-600 rounded-lg hover:bg-red-50"
+            className="w-full py-4 border-2 border-red-100 text-red-600 rounded-xl hover:bg-red-50 hover:border-red-200 font-bold transition active:scale-95 flex items-center justify-center gap-2"
           >
+            <Trash2 size={18} />
             Clear Cache & Data
           </button>
+          <p className="text-xs text-gray-400 mt-3 text-center">
+            This action removes all downloaded images and cart items.
+          </p>
         </div>
       </div>
     </div>
