@@ -3,7 +3,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { 
   Search, RefreshCw, ShoppingCart, Settings, ArrowLeft, 
-  Trash2, Share2, X, Maximize2, MapPin, User
+  Trash2, Share2, X, Maximize2, MapPin, User,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Product, CartItem } from './types';
 import { 
@@ -315,8 +316,43 @@ const ProductDetailPage = () => {
     }
   };
 
+  const navigateToPrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (currentIndex > 0) {
+      navigate(`/product/${products[currentIndex - 1].id}`, { replace: true });
+    }
+  };
+
+  const navigateToNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (currentIndex < products.length - 1) {
+      navigate(`/product/${products[currentIndex + 1].id}`, { replace: true });
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen bg-white relative">
+      {/* Navigation Arrows */}
+      {currentIndex > 0 && (
+        <button 
+          onClick={navigateToPrev}
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/70 backdrop-blur-sm shadow-md rounded-r-lg text-gray-800 hover:bg-white transition-all active:bg-gray-200"
+          aria-label="Previous Product"
+        >
+          <ChevronLeft size={28} />
+        </button>
+      )}
+
+      {currentIndex < products.length - 1 && (
+        <button 
+          onClick={navigateToNext}
+          className="fixed right-0 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/70 backdrop-blur-sm shadow-md rounded-l-lg text-gray-800 hover:bg-white transition-all active:bg-gray-200"
+          aria-label="Next Product"
+        >
+          <ChevronRight size={28} />
+        </button>
+      )}
+
       {/* Fullscreen Viewer */}
       {isFullScreen && (
         <div 
@@ -331,6 +367,25 @@ const ProductDetailPage = () => {
           >
             <X size={32} />
           </button>
+          
+          {/* Fullscreen Arrows */}
+          {currentIndex > 0 && (
+            <button 
+              onClick={navigateToPrev}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/30 text-white rounded-r-lg"
+            >
+              <ChevronLeft size={40} />
+            </button>
+          )}
+          {currentIndex < products.length - 1 && (
+             <button 
+              onClick={navigateToNext}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-50 p-3 bg-black/30 text-white rounded-l-lg"
+            >
+              <ChevronRight size={40} />
+            </button>
+          )}
+
           <img 
             src={product.imageUrl} 
             className="max-w-full max-h-full object-contain"
