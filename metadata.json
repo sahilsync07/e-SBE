@@ -1,0 +1,5 @@
+{
+  "name": "StockSync Inventory",
+  "description": "An offline-first inventory and cart management web app. Features incremental sync, local persistence, product catalog with swipe navigation, and WhatsApp PDF invoicing.",
+  "requestFramePermissions": []
+}
